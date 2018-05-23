@@ -1,4 +1,7 @@
 class CreepsSing {
+    //DEPRECATED
+    //Since my multiroom code this no longer works as before.
+    //I am leaving it in case I want to modify it in the future and use it for singing creeps
     rickRolled(){
         function compare(a,b) {
             if (a.ticksToLive === b.ticksToLive){
