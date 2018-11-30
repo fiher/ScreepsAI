@@ -3,6 +3,7 @@ class ControllerLinks {
     constructor(){
         
     }
+
     main(roomName){
         if(!Memory.ownedRooms[roomName].links){
             return
@@ -18,5 +19,6 @@ class ControllerLinks {
             }
         })
     }
+
 }
 module.exports = new ControllerLinks

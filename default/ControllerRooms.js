@@ -4,6 +4,7 @@ let ControllerLinks = require('ControllerLinks')
 let RepositoryCreeps = require('RepositoryCreeps')
 let MiningModule = require('MiningModule')
 let DefenseModule = require('DefenseModule')
+
 class ControllerRooms{
     manage(room){
         room = Memory.ownedRooms[room.name]
@@ -29,5 +30,6 @@ class ControllerRooms{
             DefenseModule.main(room)
         }
     }
+
 }
 module.exports = new ControllerRooms

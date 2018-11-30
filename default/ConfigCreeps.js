@@ -11,6 +11,7 @@ class ConfigCreeps {
     constructor(){
         this.creepsControllersByRole = {}
     }
+
     setConfig(){
         this.creepsControllersByRole = {
             [Memory.creepsConf.roles.miner]: RoleMiner,
@@ -22,10 +23,13 @@ class ConfigCreeps {
             [Memory.creepsConf.roles.mineralFiller]:CreepControllerMineralFiller,
             [Memory.creepsConf.roles.repairer]:CreepControllerRepairer,
         }
+
         return
+
         if(!Memory.creepsConf){
             Memory.creepsConf = {}
         }
+
         if(!Memory.creepsConf.roles){
             Memory.creepsConf.roles = {
                 miner: 'Miner',
@@ -46,6 +50,7 @@ class ConfigCreeps {
             }
         }
     }
+
     removeDeadCreeps(){
         Object.keys(Memory.creeps).map((creep)=>{
             if(!Game.creeps[creep]){
@@ -53,6 +58,7 @@ class ConfigCreeps {
             }
         })
     }
+
     getControllerByRole(role){
         return this.creepsControllersByRole[role]
     }
