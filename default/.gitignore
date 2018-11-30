@@ -1,2 +1,4 @@
 /.idea
-.idea/
+.idea/.idea/
+default/node_modules/
+default/package-lock.json
