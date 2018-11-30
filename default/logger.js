@@ -13,7 +13,7 @@ module.exports = global.function(splittedText){
         }
     })
     let joinedText = ''
-    for(i = 0; i<splittedText.length;i++){
+    for(i = 0; i < splittedText.length;i++){
         
         joinedText += splittedText[i]
         joinedText += args[i] ? args[i]:''

@@ -176,73 +176,6 @@ class ConfigRooms {
                     }
                 }
             })
-            /*
-            let remotes = Object.keys(Game.flags).filter(flagName => flagName.includes('remoteRoom_'+roomName)).map(flagName => flagName.split('_')[2])
-            
-            if(remotes && remotes.length > 0){
-                remotes.forEach(remote =>{
-                    let remoteRoom = Game.rooms[remote]
-                    if(!Memory.rooms[roomName].remoteRooms){
-                        Memory.rooms[roomName].remoteRooms = {}
-                    }
-                    if(!Memory.rooms[roomName].remoteRooms[remote]){
-                        Memory.rooms[roomName].remoteRooms[remote] = {
-                            name:remote,
-                            energySources: {},
-                            constructionSites:{},
-                            controller: '',
-                            lastReserved:0,
-                            underAttack:false,
-                        }
-                    }
-                    if(remoteRoom){
-                        if(_.isEmpty(Memory.rooms[roomName].remoteRooms[remote].energySources)){
-                            remoteRoom.find(FIND_SOURCES_ACTIVE).forEach((source)=>{
-                                if(!Memory.rooms[roomName].remoteRooms[remote].energySources[source.id]){
-                                    Memory.rooms[roomName].remoteRooms[remote].energySources[source.id] = {
-                                        id:source.id,
-                                        energy:3000,
-                                        pos:source.pos,
-                                        creeps:[],
-                                        creepsMiningPotential:0,
-                                        maxCreepsCount: this._countAccessibleTilesAroundSource(source)
-                                    }
-                                }
-                            })
-                        }
-                        if(!Memory.rooms[roomName].remoteRooms[remote].containersMine){
-                            Memory.rooms[roomName].remoteRooms[remote].containersMine = {}
-                        }
-                        remoteRoom.find(FIND_STRUCTURES).filter(structure => structure.structureType === STRUCTURE_CONTAINER).forEach(container => {
-                                if(Memory.rooms[roomName].remoteRooms[remote].containersMine[container.id]){
-                                    Memory.rooms[roomName].remoteRooms[remote].containersMine[container.id].energy = container.store.energy
-                                }
-                                Memory.rooms[roomName].remoteRooms[remote].containersMine[container.id]= {
-                                    id:container.id,
-                                    pos:container.pos,
-                                    energy:container.store.energy,
-                                    energyCapacity:container.storeCapacity
-                                }
-                        })
-                        let constructionSites = remoteRoom.find(FIND_CONSTRUCTION_SITES)
-                        constructionSites.forEach((constructionSite)=>{
-                            if(!Memory.rooms[roomName].remoteRooms[remote].constructionSites[constructionSite.id]){
-                                Memory.rooms[roomName].remoteRooms[remote].constructionSites[constructionSite.id]= {
-                                    id:constructionSite.id,
-                                    type:constructionSite.structureType,
-                                    pos:constructionSite.pos
-                                }
-                            }
-                        })
-                        Object.values(Memory.rooms[roomName].remoteRooms[remote].constructionSites).forEach(site => {
-                            if(!Game.getObjectById(site.id)){
-                                delete Memory.rooms[roomName].remoteRooms[remote].constructionSites[site.id]
-                            }
-                        })
-                    }
-                })
-            }
-            */
         })
     }
     assignMinerToEnergySource(creep,roomName,sourceId){
@@ -310,7 +243,6 @@ class ConfigRooms {
                     powerSpawns:{},
                     nukes:{},
                     labs:{},
-                    extensions:{},
                     emergency:false,
                     underAttack: false,
                     threatLevel:0,
