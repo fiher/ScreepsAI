@@ -1,182 +1,180 @@
-//DEPRECATED 
-/*
-This class was made when I wanted to store information about a room in memory globally.
-Since then with the adding of additional stuff I came with a better solution
-Each `Repository` should collect data on its own.
-This class is the result of switching between design patterns.
-
-So far it is still used because my colony still needs to be active. 
-However the code in this class is a bucnh of `fast fixes` to keep the colony working
-To see what the code will look like head to files with the name `New`
-
-*/
-
 class ConfigRooms {
-    setConfig(){
+    constructor(){
+        if(!Memory.ownedRooms){
+            Memory.ownedRooms = {}
+        }
+        if(!Memory.remoteRooms){
+            Memory.remoteRooms = {}
+        }
         if(!Memory.rooms){
             Memory.rooms = {}
         }
-        
-        Object.values(Game.spawns).map((spawn)=>{
-            let room = spawn.room
-            let roomName = room.name
-            if(!Memory.rooms[roomName]){
-                Memory.rooms[roomName] = {}
-                Memory.rooms[roomName].name = roomName
-                Memory.rooms[roomName].controller = room.controller.id
-                Memory.rooms[roomName].level = room.controler.level
-                Memory.rooms[roomName].energySources = {}
-                Memory.rooms[roomName].spawns = {}
-                Memory.rooms[roomName].constructionSites = {}
-                Memory.rooms[roomName].links = {}
-                Memory.rooms[roomName].linksMIne = {}
-                Memory.rooms[roomName].extentions = {}
-                Memory.rooms[roomName].towers = {}
-                Memory.rooms[roomName].containers = {}
-                Memory.rooms[roomName].containersMine = {}
-                Memory.rooms[roomName].remoteRooms = {}
-                Memory.rooms[roomName].emergency = false
-                Memory.rooms[roomName].underAttack = false
-                Memory.rooms[roomName].threatLevel = 0
-                Memory.rooms[roomName].constructionSites = {}
-            }else{
-                Memory.rooms[roomName].energyAvailable = room.energyAvailable
-                Memory.rooms[roomName].energyCapacityAvailable = room.energyCapacityAvailable
-                Memory.rooms[roomName].level = room.controller.level
-                Memory.rooms[roomName].name = roomName
-                
+
+    }
+    init(){
+        Object.values(Game.rooms).forEach(room => {
+
+            if(!room.controller){
+                this.setRoom(room)
+                return
             }
-            if(!Memory.rooms[roomName].spawns){
-                Memory.rooms[roomName].spawns = {}
+            if(room.controller.my){
+                this.setOwnedRoom(room)
+                this.setRoom(room)
+                return
             }
-            if(!Memory.rooms[roomName].spawns[spawn.id]){
-                Memory.rooms[roomName].spawns[spawn.id] = spawn.id
+            if(Object.keys(Game.flags).filter(flag => flag.includes(room.name) && flag.includes('remote')) ){
+                let ownerRoomName = Object.keys(Game.flags).filter(flagName => flagName.includes("_" + room.name)).map(flag => flag.split("_")[1])[0]
+                this.setRemoteRoom(room,ownerRoomName)
             }
-            if(!Memory.rooms[roomName].energySources){
-                Memory.rooms[roomName].energySources = {}
+            this.setRoom(room)
+        })
+    }
+    removeConstructionSites(){
+        Object.values(Memory.ownedRooms).forEach(room => {
+            room.constructionSites = {}
+        })
+    }
+    setRoom(room){
+        if(!Memory.rooms[room.name]){
+            let mineral = room.find(FIND_MINERALS)[0]
+            Memory.rooms[room.name] = {
+                name: room.name,
+                lastUpdated: Game.time,
+                costMatrix: this.getCostMatrix(room),
+                mineral: mineral ? mineral.mineralType : undefined
             }
-            if(!Memory.rooms[roomName].hasOwnProperty('linksMine')){
-                Memory.rooms[roomName].linksMine = {}
+        }
+        if(room.controller){
+            Memory.rooms[room.name].level = room.controller.level
+            let owner  = room.controller.owner ? room.controller.owner.username : undefined
+            Memory.rooms[room.name].owner = owner
+            Memory.rooms[room.name].mine = owner === 'fihercho' ? true : false
+        }
+        if(Game.time - Memory.rooms[room.name].lastUpdated > 10000){
+            Memory.rooms[room.name].costMatrix = this.getCostMatrix(room)
+            Memory.rooms[room.name].lastUpdated = Game.time
+        }
+    }
+    setRemoteRoom(room,ownerRoomName){
+
+        if(!Memory.remoteRooms[room.name]){
+            let roomData  = {
+                name:room.name,
+                sources: {},
+                minerals: {},
+                controller: {
+                    id: room.controller.id,
+                    pos:{
+                        x:room.controller.pos.x,
+                        y:room.controller.pos.y
+                    },
+                    reserved: !!room.controller.reservation,
+                    reservationEndTick: room.controller.reservation ? Game.time + room.controller.reservation.ticksToEnd : 0,
+                },
+                underAttack: false,
+                threatLevel: 0,
+                owner: ownerRoomName,
+                containers: {},
+                constructionSites: {}
             }
-            if(!Memory.rooms[roomName].hasOwnProperty('links')){
-                Memory.rooms[roomName].links = {}
-            }
-            if(!Memory.rooms[roomName].constructionSites){
-                Memory.rooms[roomName].constructionSites = {}
-            }
-            if(!Memory.rooms[roomName].extentions){
-                Memory.rooms[roomName].extentions = {}
-            }
-            if(!Memory.rooms[roomName].containers){
-                Memory.rooms[roomName].containers = {}
-            }
-            if(!Memory.rooms[roomName].towers){
-                Memory.rooms[roomName].towers = {}
-            }
-            if(!Memory.rooms[roomName].containersMine){
-                Memory.rooms[roomName].containersMine = {}
-            }
-            room.find(FIND_STRUCTURES)
-                    .forEach((structure)=>{
-                        //console.log(structure.structureType)
-                        if(structure.structureType === STRUCTURE_EXTENSION){
-                            if(!Memory.rooms[roomName].extentions[structure.id]){
-                            Memory.rooms[roomName].extentions[structure.id]= {
-                                id:structure.id,
-                                pos:structure.pos,
-                                energy:structure.energy,
-                                energyCapacity:structure.energyCapacity
-                            }
-                            }else{
-                                Memory.rooms[roomName].extentions[structure.id].energy = structure.energy
-                            }
-                        }else if(structure.structureType  === STRUCTURE_STORAGE){
-                            if(!Memory.rooms[roomName].storage){
-                                Memory.rooms[roomName].storage = {
-                                    id:structure.id,
-                                    pos:structure.pos
-                                }
-                            }
-                        }else if(structure.structureType  === STRUCTURE_TERMINAL){
-                            if(!Memory.rooms[roomName].terminal){
-                                Memory.rooms[roomName].terminal = {
-                                    id:structure.id,
-                                    pos:structure.pos
-                                }
-                            }
-                        }else if(structure.structureType === STRUCTURE_TOWER){
-                            if(!Memory.rooms[roomName].towers[structure.id]){
-                                Memory.rooms[roomName].towers[structure.id]= {
-                                    id:structure.id,
-                                    pos:structure.pos,
-                                    energy:structure.energy,
-                                    energyCapacity:structure.energyCapacity
-                                }
-                            }else{
-                                Memory.rooms[roomName].towers[structure.id].energy = structure.energy
-                            }
-                        }else if(structure.structureType === STRUCTURE_CONTAINER){
-                            if(structure.pos.findInRange(FIND_SOURCES,1).length >0){
-                                if(Memory.rooms[roomName].containersMine[structure.id]){
-                                    Memory.rooms[roomName].containersMine[structure.id].energy = structure.store.energy
-                                }
-                                Memory.rooms[roomName].containersMine[structure.id]= {
-                                    id:structure.id,
-                                    pos:structure.pos,
-                                    energy:structure.store.energy,
-                                    energyCapacity:structure.storeCapacity
-                                }
-                            }
-                            else{
-                                Memory.rooms[roomName].containers[structure.id]= {
-                                    id:structure.id,
-                                    pos:structure.pos,
-                                    energy:structure.storage,
-                                    energyCapacity:structure.storageCapacity
-                                }
-                            }
-                        }else if(structure.structureType === STRUCTURE_LINK){
-                            
-                            if(structure.pos.findInRange(FIND_SOURCES,2).length >0){
-                                
-                                if(Memory.rooms[roomName].linksMine[structure.id]){
-                                    Memory.rooms[roomName].linksMine[structure.id].energy = structure.energy
-                                    return
-                                }
-                                console.log(structure)
-                                Memory.rooms[roomName].linksMine[structure.id]= {
-                                    id:structure.id,
-                                    pos:structure.pos,
-                                    energy:structure.energy,
-                                    energyCapacity:structure.energyCapacity
-                                    
-                                }
-                            }else{
-                                if(Memory.rooms[roomName].links[structure.id]){
-                                    Memory.rooms[roomName].links[structure.id].energy = structure.energy
-                                    return
-                                }
-                                Memory.rooms[roomName].links[structure.id]= {
-                                    id:structure.id,
-                                    pos:structure.pos,
-                                    energy:structure.energy,
-                                    energyCapacity:structure.energyCapacity
-                                }
-                                
-                            }
-                        }
-                    })
-            let constructionSites = room.find(FIND_CONSTRUCTION_SITES)
-            constructionSites.forEach((constructionSite)=>{
-                if(!Memory.rooms[roomName].constructionSites[constructionSite.id]){
-                    Memory.rooms[roomName].constructionSites[constructionSite.id]= {
-                        id:constructionSite.id,
-                        type:constructionSite.structureType,
-                        pos:constructionSite.pos
-                    }
+            Memory.remoteRooms[room.name] = roomData
+            room.find(FIND_SOURCES).forEach(source => {
+                Memory.remoteRooms[room.name].sources[source.id] = {
+                    id:source.id,
+                    energy: SOURCE_ENERGY_CAPACITY,
+                    creeps: [],
+                    maxCreepsCount: this._countAccessibleTilesAroundSource(source),
+                    creepsMiningPotential: 0,
+                    container: '',
+                    link: '',
                 }
             })
+            room.find(FIND_MINERALS).forEach(mineral => {
+                Memory.remoteRooms[room.name].minerals[mineral.id] = {
+                    id:mineral.id,
+                    type: mineral.mineralType,
+                    container: '',
+                }
+            })
+        }
+        Memory.remoteRooms[room.name].controller.reserved = !!room.controller.reservation
+        Memory.remoteRooms[room.name].controller.reservationEndTick = room.controller.reservation ? Game.time + room.controller.reservation.ticksToEnd : 0
+        Object.values(Memory.remoteRooms[room.name].sources).forEach(source => {
+            source.room = room.name
         })
+        let constructionSites = room.find(FIND_CONSTRUCTION_SITES)
+        constructionSites.forEach((constructionSite)=>{
+            if(!Memory.remoteRooms[room.name].constructionSites[constructionSite.id]){
+                Memory.remoteRooms[room.name].constructionSites[constructionSite.id]= {
+                    id:constructionSite.id,
+                    type:constructionSite.structureType
+                }
+            }
+        })
+    }
+    setOwnedRoom(room){
+        if(!Memory.ownedRooms[room.name]){
+            Memory.ownedRooms[room.name] = {
+                name:room.name,
+                sources:{},
+                minerals: {},
+                controller: room.controller.id,
+                energyCapacityAvailable: room.energyCapacityAvailable,
+                emergency:false,
+                underAttack: false,
+                threatLevel:0,
+                level: room.controller.level,
+                constructionSites: {},
+            }
+            room.find(FIND_SOURCES).forEach(source => {
+                Memory.ownedRooms[room.name].sources[source.id] = {
+                    id:source.id,
+                    energy: SOURCE_ENERGY_CAPACITY,
+                    creeps: [],
+                    maxCreepsCount: this._countAccessibleTilesAroundSource(source),
+                    creepsMiningPotential: 0,
+                    container: '',
+                    link: '',
+                }
+            })
+            room.find(FIND_MINERALS).forEach(mineral => {
+                Memory.ownedRooms[room.name].minerals[mineral.id] = {
+                    id:mineral.id,
+                    type: mineral.mineralType,
+                    container: '',
+                }
+            })
+        }
+        Memory.ownedRooms[room.name].energyCapacityAvailable = room.energyCapacityAvailable
+        Memory.ownedRooms[room.name].level = room.controller.level
+        let constructionSites = room.find(FIND_CONSTRUCTION_SITES)
+        constructionSites.forEach((constructionSite)=>{
+            if(!Memory.ownedRooms[room.name].constructionSites[constructionSite.id]){
+                Memory.ownedRooms[room.name].constructionSites[constructionSite.id]= {
+                    id:constructionSite.id,
+                    type:constructionSite.structureType
+                }
+            }
+        })
+    }
+    getCostMatrix(room){
+        let costMatrix = new PathFinder.CostMatrix
+        room.find(FIND_STRUCTURES).forEach(function(struct) {
+            if (struct.structureType === STRUCTURE_ROAD) {
+                // Favor roads over plain tiles
+                costMatrix.set(struct.pos.x, struct.pos.y, 1);
+            } else if (struct.structureType !== STRUCTURE_CONTAINER &&
+                (struct.structureType !== STRUCTURE_RAMPART ||
+                    !struct.my)) {
+                // Can't walk through non-walkable buildings
+                costMatrix.set(struct.pos.x, struct.pos.y, 0xff);
+            }
+        });
+        room.find(FIND_SOURCES).forEach(source => {
+            costMatrix.set(source.pos.x, source.pos.y, 0xff)
+        })
+        return JSON.stringify(costMatrix.serialize())
     }
     assignMinerToEnergySource(creep,roomName,sourceId){
         Memory.ownedRooms[roomName].sources[sourceId].creeps.push(creep.id)
@@ -185,6 +183,18 @@ class ConfigRooms {
             creep.memory.source = sourceId
             creep.memory.container = Memory.ownedRooms[roomName].sources[sourceId].container
             creep.memory.link = Memory.ownedRooms[roomName].sources[sourceId].link
+            return true
+        }
+        return false
+    }
+    assignRemoteMinerToEnergySource(creep,source){
+        source.creeps.push(creep.id)
+        if(this._updateMiningPotential(source)){
+            creep.memory.target = source.id
+            creep.memory.source = source.id
+            creep.memory.container = source.container
+            creep.memory.link = source.link
+            creep.memory.targetRoom =  source.room
             return true
         }
         return false
@@ -198,10 +208,16 @@ class ConfigRooms {
                 source.creeps = source.creeps.filter(creepId => Game.getObjectById(creepId) && Game.getObjectById(creepId).ticksToLive > 30)
                 this._updateSourceMiningPotential(room.name,source.id)
             })
-            if(!room.remoteRooms){
+        })
+
+        Object.values(Memory.remoteRooms).forEach((remote)=>{
+            if(!remote.sources){
                 return
             }
-            
+            Object.values(remote.sources).map((source)=>{
+                source.creeps = source.creeps.filter(creepId => Game.getObjectById(creepId) && Game.getObjectById(creepId).ticksToLive > 30)
+                this._updateMiningPotential(source)
+            })
         })
     }
     _updateSourceMiningPotential(roomName,sourceId){
@@ -218,99 +234,37 @@ class ConfigRooms {
         }
         return true
     }
+    _updateMiningPotential(source){
+        let miningPotential = 0;
+        source.creeps.forEach(creep=>{
+            creep = Game.getObjectById(creep)
+            if(creep){
+                miningPotential += creep.body.filter(parts => parts.type === "work").length * HARVEST_POWER * ENERGY_REGEN_TIME
+            }
+        })
+        source.creepsMiningPotential = miningPotential
+        if(!miningPotential){
+            return false
+        }
+        return true
+    }
     _countAccessibleTilesAroundSource(source){
         const area = source.room.lookForAtArea(LOOK_TERRAIN, source.pos.y - 1, source.pos.x - 1, source.pos.y + 1, source.pos.x + 1, true);
         return _.filter(area, t => t.terrain === "plain" || t.terrain === "swamp").length;
     }
-    init(){
-        Object.values(Game.rooms).filter(room => room.controller && room.controller.my).forEach(room => {
-            let roomName = room.name
-            if(!Memory.ownedRooms){
-                Memory.ownedRooms = {}
+
+    removeDeadStructures(roomName){
+        this._removeContainersAndLinksFromAssignedStructures(roomName,'sources')
+        this._removeContainersAndLinksFromAssignedStructures(roomName,'minerals')
+    }
+    _removeContainersAndLinksFromAssignedStructures(roomName,structureName){
+        Object.values(Memory.ownedRooms[roomName][structureName]).forEach(structure => {
+            if(!Game.getObjectById(structure.container)){
+                source.container = ''
             }
-            if(!Memory.ownedRooms[roomName]){
-                Memory.ownedRooms[roomName] = {
-                    name:roomName,
-                    sources:{},
-                    minerals: {},
-                    controller: room.controller.id,
-                    energyCapacityAvailable: room.energyCapacityAvailable,
-                    towers: {},
-                    containers: {},
-                    links: {},
-                    extensions: {},
-                    spawns: {},
-                    powerSpawns:{},
-                    nukes:{},
-                    labs:{},
-                    emergency:false,
-                    underAttack: false,
-                    threatLevel:0,
-                    level: room.controller.level,
-                    constructionSites: {},
-                }
+            if(!Game.getObjectById(structure.link)){
+                source.link = ''
             }
-            Memory.ownedRooms[roomName].energyCapacityAvailable = room.energyCapacityAvailable
-            Memory.ownedRooms[roomName].level = room.controller.level
-            room.find(FIND_STRUCTURES)
-                .filter(structure => structure.structureType !== STRUCTURE_WALL 
-                                    && structure.structureType !== STRUCTURE_RAMPART 
-                                    && structure.structureType !== STRUCTURE_ROAD
-                                    && structure.structureType !== STRUCTURE_STORAGE
-                                    && structure.structureType !== STRUCTURE_TERMINAL
-                                    && structure.structureType !== STRUCTURE_CONTROLLER
-                                    && structure.structureType !== STRUCTURE_EXTRACTOR)
-                .forEach(structure => {
-                    if(!Memory.ownedRooms[roomName][`${structure.structureType}s`]){
-                        Memory.ownedRooms[roomName][`${structure.structureType}s`] = {}
-                    }
-                    if(Memory.ownedRooms[roomName][`${structure.structureType}s`][structure.id]){
-                        return
-                    }
-                    Memory.ownedRooms[roomName][`${structure.structureType}s`][structure.id] = {
-                        id: structure.id
-                    }
-                })
-            if(_.isEmpty(Memory.ownedRooms[room.name].sources)){
-                room.find(FIND_SOURCES).forEach(source => {
-                    Memory.ownedRooms[room.name].sources[source.id] = {
-                        id:source.id,
-                        energy: SOURCE_ENERGY_CAPACITY,
-                        creeps: [],
-                        maxCreepsCount: this._countAccessibleTilesAroundSource(source),
-                        creepsMiningPotential: 0,
-                        container: '',
-                        link: '',
-                    }
-                })
-            }
-            if(_.isEmpty(Memory.ownedRooms[room.name].minerals)){
-                room.find(FIND_MINERALS).forEach(mineral => {
-                    Memory.ownedRooms[room.name].minerals[mineral.id] = {
-                        id:mineral.id,
-                        type: mineral.mineralType,
-                        container: '',
-                    }
-                })
-            }
-            let constructionSites = room.find(FIND_CONSTRUCTION_SITES)
-            constructionSites.forEach((constructionSite)=>{
-                if(!Memory.ownedRooms[roomName].constructionSites[constructionSite.id]){
-                    Memory.ownedRooms[roomName].constructionSites[constructionSite.id]= {
-                        id:constructionSite.id,
-                        type:constructionSite.structureType
-                    }
-                }
-            })
-            if(!Memory.ownedRooms[roomName].constructionSites){
-                Memory.ownedRooms[roomName].constructionSites = {}
-            }
-            Object.values(Memory.ownedRooms[roomName].constructionSites).forEach(site =>{
-                if(!Game.getObjectById(site.id)){
-                    delete Memory.rooms[roomName].constructionSites[site.id]
-                }
-            })
-            
         })
     }
 }
