@@ -1,8 +1,8 @@
 let ConfigRooms = require('ConfigRooms')
-let RepositoryEnergySources = require('RepositoryEnergySources')
 let RepositoryStructures = require('RepositoryStructures')
 let ServiceCreeps = require('ServiceCreeps')
 let RepositoryCreeps = require('RepositoryCreeps')
+const RoleFiller = require('RoleFiller')
 class CreepControllerFiller {
     constructor(){
         
@@ -11,13 +11,15 @@ class CreepControllerFiller {
         if(typeof room === 'string'){
             room = Game.rooms[room]
         }
-        let creeps = Object.values(Game.creeps).filter(creep => creep.memory.owner === room.name && creep.memory.role === Memory.creepsConf.roles.filler)
-        creeps.forEach(creep => {
+        let creeps = Object.values(Game.creeps).filter(creep => creep.memory.owner === room.name && creep.memory.role === RoleFiller.getName())
+        creeps.map(creep => {
+            
             let status = false
             if(creep.carry.energy === creep.carryCapacity){
                 creep.memory.collecting = false
             }else if(creep.carry.energy === 0){
                 creep.memory.collecting = true
+                this._findAndAssignTarget(creep)
             }
             if(creep.memory.collecting){
                 status = ServiceCreeps.collect(creep)
@@ -27,33 +29,35 @@ class CreepControllerFiller {
                 creep.memory.target = ''
                 creep.say('Waiting')
                 this._findAndAssignTarget(creep)
-                return false
+                return creep
             }else{
                 
                 status = ServiceCreeps.deliver(creep)
                 if(status){
-                    return true
+                    return creep
                 }
                 creep.memory.destination = ''
                 creep.memory.target = ''
                 creep.say('Waiting')
+                this._findAndAssignTarget(creep)
                 this._findAndAssignDestination(creep)
-                return false
-        }   
+                return creep
+            }   
         })
     }
     _findAndAssignTarget(creep){
-        let target = RepositoryEnergySources.getLink(creep)
-        if(target){
+        let target = RepositoryStructures.getLink(creep.memory.owner)
+        if(target && target.energy > MINIMUM_WITHDRAW_ENERGY){
+            
             creep.memory.target = target.id
             return true
         }
-        target = RepositoryEnergySources.getStorage(creep)
-        if(target){
+        target = RepositoryStructures.getStorage(creep.memory.owner)
+        if(target && target.store.energy > MINIMUM_WITHDRAW_ENERGY){
             creep.memory.target = target.id
             return true
         }
-        target = RepositoryEnergySources.getContainer(creep)
+        target = RepositoryStructures.getContainer(creep)
         if(target){
             creep.memory.target = target.id
             return true
@@ -68,8 +72,7 @@ class CreepControllerFiller {
     }
     _findAndAssignDestination(creep){
         let creepCarry = creep.carry.energy
-        let availableExtentions = Object.values(Memory.ownedRooms[creep.memory.owner].extensions)
-                                    .map(extention => Game.getObjectById(extention.id))
+        let availableExtentions = Object.values(Game.rooms[creep.memory.owner].extensions)
                                     .filter(structure =>  structure && structure.energy < structure.energyCapacity).sort(this.compare.bind(creep))
         if(availableExtentions.length === 1){
             creep.memory.destination = availableExtentions[0].id
@@ -80,8 +83,7 @@ class CreepControllerFiller {
             return true
             
         }
-        let availableSpawns = Object.values(Memory.rooms[creep.room.name].spawns)
-                                .map(spawnId => Game.getObjectById(spawnId))
+        let availableSpawns = Object.values(Game.rooms[creep.memory.owner].spawns)
                                 .filter(spawn => spawn.energy < spawn.energyCapacity)
         if(availableSpawns.length === 1){
             creep.memory.destination = availableSpawns[0].id
@@ -92,8 +94,7 @@ class CreepControllerFiller {
             console.log("fock")
             return true
         }
-        let availableTowers = Object.values(Memory.rooms[creep.room.name].towers)
-                                    .map(tower => Game.getObjectById(tower.id))
+        let availableTowers = Object.values(Game.rooms[creep.memory.owner].towers)
                                     .filter(structure => structure && structure.energy < structure.energyCapacity*0.6)
         if(availableTowers.length === 1){
             creep.memory.destination = availableTowers[0].id
@@ -103,7 +104,7 @@ class CreepControllerFiller {
                 .reduce((prev,next)=> creep.pos.findPathTo(prev) < creep.pos.findPathTo(next) ? prev:next).id
             return true
         }
-        let availableStorage = creep.room.find(FIND_STRUCTURES,{filter:structure => structure.structureType === STRUCTURE_STORAGE})[0]
+        let availableStorage = Game.rooms[creep.memory.owner].storage
         if( !availableStorage || creep.memory.target === availableStorage.id){
             return false
         }

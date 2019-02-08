@@ -1,140 +1,202 @@
-let RepositoryCreeps = require('RepositoryCreeps')
-class ServiceCreeps{
-    calculatePriority(roomName,role){
-        let room = Memory.ownedRooms[roomName]
-        let creepsMaximum = RepositoryCreeps.getCreepRoleMaximum(room,role)
-        let priority = RepositoryCreeps.getCreepsPriority(room,role)
-        let creepsCount = RepositoryCreeps.getCreepsCountByRole(room.name,role)
-        
-        if(creepsCount >= creepsMaximum){return 0}
-        if(creepsCount ===0){priority+=2}
-        if(creepsCount > creepsMaximum/2){priority -=1}
-        return priority
-    }
-    harvest(creep){
-        if(creep.memory.mining){
+class ServiceCreeps {
+    harvest(creep) {
+        if (creep.memory.mining) {
             creep.harvest(Game.getObjectById(creep.memory.target))
             return
         }
-        if(creep.memory.container){
+        if (creep.memory.container) {
             let container = Game.getObjectById(creep.memory.container)
-            if(!creep.pos.isEqualTo(container.pos.x,container.pos.y)){
+            if (container && !creep.pos.isEqualTo(container.pos.x, container.pos.y)) {
                 creep.moveTo(container)
                 return
             }
-            creep.memory.mining = true
         }
         let source = Game.getObjectById(creep.memory.target)
-        if(creep.harvest(source) === ERR_NOT_IN_RANGE){
-                let result = creep.moveTo(source,{visualizePathStyle: {stroke: '#ffaa00'},range:1})
-                return
+        if (creep.harvest(source) === ERR_NOT_IN_RANGE) {
+            let result = creep.moveTo(source, {
+                visualizePathStyle: {
+                    stroke: '#ffaa00'
+                },
+                range: 1
+            })
+            return
             return
         }
         //creep.say("Mining")
     }
-
-    upgrade(creep){
-        let controller = Game.getObjectById(creep.memory.destination)
-        if(creep.upgradeController(controller) == ERR_NOT_IN_RANGE) {
-            creep.moveTo(controller, {visualizePathStyle: {stroke: '#ffffff'},range:3})
+    upgrade(creep) {
+        const controller = Game.getObjectById(creep.memory.destination)
+        if (creep.upgradeController(controller) == ERR_NOT_IN_RANGE) {
+            creep.moveTo(controller, {
+                visualizePathStyle: {
+                    stroke: '#ffffff'
+                },
+                range: 3
+            })
             //creep.say("Upgrading")
             return true
         }
         return false
     }
-    build(creep){
-        
-        let destination = Game.getObjectById(creep.memory.destination)
-        if(creep.carry.energy === 0 || !destination){
+    build(creep) {
+        const destination = Game.getObjectById(creep.memory.destination)
+        if (creep.carry.energy === 0 || !destination) {
             return false
         }
-        let result = creep.build(destination)
-        if(result === ERR_NOT_IN_RANGE){
-            creep.moveTo(destination,{range:3})
-            //creep.say('To Build')
-        }else if(result === OK){
-            //creep.say("Building")
-        }else{
-            //console.log(result)
+        const result = creep.build(destination)
+        if (result === ERR_NOT_IN_RANGE) {
+            creep.moveTo(destination, {
+                range: 3
+            })
+        } else {
             return false
         }
         return true
     }
-    deliver(creep){
+    deliver(creep) {
         let destination = Game.getObjectById(creep.memory.destination)
-        if(!destination){
-            //console.log('Couldnt get destination.Creep role -> '+creep.memory.role +" and ID -> "+creep.id)
+        if (!destination) {
             return false
         }
-        let amountNeeded = 0
-        if(destination.structureType === STRUCTURE_CONTAINER && destination.store){
-            amountNeeded = destination.storeCapacity - destination.store.energy
-        }else if(destination.structureType){
-            amountNeeded = destination.energyCapacity - destination.energy
-        }else{
-            amountNeeded = destination.carryCapacity - destination.carry.energy
-        }
-        let amountToTransfer =  amountNeeded < creep.carry.energy ? amountNeeded:creep.carry.energy
-        if(amountNeeded === 0){
-            //creep.say("Not needed!")
-            return false
-        }
-        let result = creep.transfer(destination,RESOURCE_ENERGY,amountToTransfer)
-        if(result === ERR_NOT_IN_RANGE){
-            creep.moveTo(destination,{visualizePathStyle: {stroke: '#ffffff'},range:1})
+        let result = creep.transfer(destination, RESOURCE_ENERGY)
+        if (result === ERR_NOT_IN_RANGE) {
+            creep.moveTo(destination, {
+                visualizePathStyle: {
+                    stroke: '#ffffff'
+                },
+                range: 1
+            })
             //creep.say('To Deliver!')
             return true
-        }else if(result === OK){
-            //creep.say("Delivering!")
-            //we return false just so the controller will look for another destination
+        } else if (result === OK) {
+            creep.say("Delivering!")
+            // we return false just so the controller will look for another destination
             return false
         }
-        //console.log('Couldnt deliver. Result ->'+result)
-        
         return false
     }
-    collect(creep){
-        let target = Game.getObjectById(creep.memory.target)
-        if(!target){
-            //console.log('Unable to select target -> '+ creep.memory.target) 
-            //console.log('Crep name is -> '+creep.name)
+    collect(creep) {
+        const target = Game.getObjectById(creep.memory.target)
+        if (!target) {
             return false
         }
         let result = ''
-        
-        if(target.energy){
+        if (target.energy) {
             result = creep.pickup(target)
-            if(result === -7){
-                result = creep.withdraw(target,RESOURCE_ENERGY)
+            if (result === -7) {
+                result = creep.withdraw(target, RESOURCE_ENERGY)
             }
-           
-        }else{
-            if( target.store && target.store.energy < creep.carryCapacity/2){
-                console.log('Target has too few resources')
+        } else {
+            if (target.store && target.store.energy < creep.carryCapacity / 2) {
                 return false
             }
-            result = creep.withdraw(target,RESOURCE_ENERGY)
+            result = creep.withdraw(target, RESOURCE_ENERGY)
         }
-        if(result === ERR_NOT_IN_RANGE){
-            creep.moveTo(target,{range:1})
-            //creep.say('To collect!!')
+        if (result === ERR_NOT_IN_RANGE) {
+            creep.moveTo(target, {
+                range: 1
+            })
             return true
-        }else if(result === OK){
-            //creep.say("Collecting!!")
-            //we return false for the controller to assign new target
+        } else if (result === OK) {
             return false
         }
-        //console.log('Couldnt collect error =>'+result)
         return false
     }
-    collectt(creep){
-        let destination = Game.getObjectById(creep.memory.destination)
-        if(destination.structureType){
-            creep.withdraw(destination,RESOURCE_ENERGY)
-        }else{
-            creep.pickup(destination)
+    collecting(creep) {
+        const target = Game.getObjectById(creep.memory.target)
+        if (!target) {
+            return false
         }
+        let outcome = true
+        if (target.structureType) {
+            outcome = creep.withdraw(target, RESOURCE_ENERGY)
+        } else {
+            outcome = creep.pickup(target)
+        }
+        return !outcome //OK is 0 which is false, so we need the opposite
     }
     
+    moveToRoom(creep) {
+        if (creep.memory.targetRoom === creep.pos.roomName && creep.pos.x !== 49 && creep.pos.y !== 49 && creep.pos.x !== 0 && creep.pos.x !== 0) {
+            return false
+        }
+        creep.moveTo(new RoomPosition(25, 25, creep.memory.targetRoom))
+        return true
+    }
+    
+    moveToTarget(creep, range = 1) {
+        const target = Game.getObjectById(creep.memory.target)
+        if (creep.pos.isNearTo(target)) {
+            return false
+        }
+        return !creep.moveTo(target, {range}) //The value for OK is 0 so I need to revert it and from false to make it true while any error is >0 so it becomes false
+    }
+    
+    moveToDestination(creep, range = 1) {
+        const destination = Game.getObjectById(creep.memory.destination)
+        if (creep.pos.isNearTo(destination)) {
+            return false
+        }
+        return !creep.moveTo(destination, {range})
+    }
+    
+    moveToController(creep){
+        console.log(creep.room.controller)
+        return !creep.moveTo(creep.room.controller,{range: 3})
+    }
+    
+    harvesting(creep) {
+        const outcome = creep.harvest(Game.getObjectById(creep.memory.target))
+        if (outcome !== OK) {
+            return false
+        }
+        return true
+    }
+    delivering(creep) {
+        const destination = Game.getObjectById(creep.memory.destination)
+        if (!destination) {
+            return false
+        }
+        const outcome = creep.transfer(destination, RESOURCE_ENERGY)
+        if (outcome !== OK) {
+            return false
+        }
+        return true
+    }
+    reserving(creep) {
+        const outcome = creep.reserveController(Game.getObjectById(reserver.memory.target))
+        if (outcome !== OK) {
+            return false
+        }
+        return true
+    }
+    
+    repairing(creep) {
+        const outcome = creep.repair(Game.getObjectById(creep.memory.target))
+        if (outcome != OK) {
+            return false
+        }
+        return true
+    }
+    
+    upgrading(creep) {
+        return !creep.upgradeController(creep.room.controller) // OK is coded as 0 which is false, but we want true
+    }
+    
+    isOnExit(creep) {
+        if (creep.pos.x === 49 || creep.pos.y === 49 || creep.pos.x === 0 || creep.pos.y === 0) {
+            return true
+        }
+        return false
+    }
+    
+    building(creep) {
+        const outcome = creep.build(Game.getObjectById(creep.memory.destination))
+        if (outcome !== OK) {
+            return false
+        }
+        return true
+    }
+
 }
 module.exports = new ServiceCreeps

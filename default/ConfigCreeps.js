@@ -1,67 +1,50 @@
-let CreepControllerCarrier = require('CreepControllerCarrier')
-let CreepControllerUpgrader = require('CreepControllerUpgrader')
-let CreepControllerBuilder = require('CreepControllerBuilder')
-let CreepControllerAttacker = require('CreepControllerAttacker')
-let CreepControllerHarvester = require('CreepControllerHarvester')
-let CreepControllerMineralMiner = require('CreepControllerMineralMiner')
-let CreepControllerMineralFiller = require('CreepControllerMineralFiller')
-let CreepControllerRepairer = require('CreepControllerRepairer')
-let RoleMiner = require('RoleMiner')
+const CreepControllerUpgrader = require('CreepControllerUpgrader')
+const CreepControllerMineralFiller = require('CreepControllerMineralFiller')
+const RoleMiner = require('RoleMiner')
+const RoleMineralMiner = require('RoleMineralMiner')
+const RoleRepairer = require('RoleRepairer')
+const RoleReserver = require('RoleReserver')
+const RoleFiller = require('RoleFiller')
+const RoleRemoteMiner = require('RoleRemoteMiner')
+const RoleDefender = require('RoleDefender')
+const RoleWrecker = require('RoleWrecker')
+const RoleCarrier = require('RoleCarrier')
+const RoleMineralFiller = require('RoleMineralFiller')
+const RoleUpgrader = require('RoleUpgrader')
+const RoleBuilder = require('RoleBuilder')
+const RoleNukeLoader = require('RoleNukeLoader')
+const RoleClaimBuilder = require('RoleClaimBuilder')
+const RoleClaimer = require('RoleClaimer')
 class ConfigCreeps {
-    constructor(){
-        this.creepsControllersByRole = {}
-    }
-
-    setConfig(){
+    constructor() {
         this.creepsControllersByRole = {
-            [Memory.creepsConf.roles.miner]: RoleMiner,
-            [Memory.creepsConf.roles.carrier]: CreepControllerCarrier,
-            [Memory.creepsConf.roles.upgrader]: CreepControllerUpgrader,
-            [Memory.creepsConf.roles.builder]: CreepControllerBuilder,
-            [Memory.creepsConf.roles.attacker]: CreepControllerAttacker,
-            [Memory.creepsConf.roles.mineralMiner]:CreepControllerMineralMiner,
-            [Memory.creepsConf.roles.mineralFiller]:CreepControllerMineralFiller,
-            [Memory.creepsConf.roles.repairer]:CreepControllerRepairer,
-        }
-
-        return
-
-        if(!Memory.creepsConf){
-            Memory.creepsConf = {}
-        }
-
-        if(!Memory.creepsConf.roles){
-            Memory.creepsConf.roles = {
-                miner: 'Miner',
-                carrier: 'Carrier',
-                upgrader:'Upgrader',
-                builder:'Builder',
-                attacker:'Attacker',
-                singer:'Singer',
-                filler:'Filler',
-                mineralMiner:'MineralMiner',
-                mineralFiller:'MineralFiller',
-                claimer:'Claimer',
-                remoteMiner:'RemoteMiner',
-                remoteCarrier:'RemoteCarrier',
-                remoteRepairer:'RemoteRepairer',
-                healer: 'Healer',
-                repairer:'Repairer'
-            }
+            [RoleMiner.getName()]: RoleMiner,
+            [RoleCarrier.getName()]: RoleCarrier,
+            [RoleUpgrader.getName()]: CreepControllerUpgrader,
+            [RoleBuilder.getName()]: RoleBuilder,
+            [RoleMineralMiner.getName()]: RoleMineralMiner,
+            [RoleMineralFiller.getName()]: CreepControllerMineralFiller,
+            [RoleRepairer.getName()]: RoleRepairer,
+            [RoleReserver.getName()]: RoleReserver,
+            [RoleRemoteMiner.getName()]: RoleRemoteMiner,
+            [RoleDefender.getName()]: RoleDefender,
+            [RoleWrecker.getName()]: RoleWrecker,
+            [RoleMineralMiner.getName()]: RoleMineralMiner,
+            [RoleNukeLoader.getName]: RoleNukeLoader,
+            [RoleClaimBuilder.getName()]: RoleClaimBuilder,
+            [RoleClaimer.getName()]: RoleClaimer,
         }
     }
-
-    removeDeadCreeps(){
-        Object.keys(Memory.creeps).map((creep)=>{
-            if(!Game.creeps[creep]){
+    removeDeadCreeps() {
+        Object.keys(Memory.creeps).map((creep) => {
+            if (!Game.creeps[creep]) {
                 delete Memory.creeps[creep]
             }
         })
     }
-
-    getControllerByRole(role){
+    getControllerByRole(role) {
         return this.creepsControllersByRole[role]
     }
-    
+
 }
 module.exports = new ConfigCreeps
